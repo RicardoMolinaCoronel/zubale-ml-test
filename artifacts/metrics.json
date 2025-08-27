@@ -1,0 +1,8 @@
+{
+  "roc_auc": 0.930800533484328,
+  "pr_auc": 0.869828879355692,
+  "accuracy": 0.8675,
+  "timestamp": "2025-08-27T21:12:10.394105+00:00",
+  "git_sha": "b3dc7a1080e6653468000d2699e26b09ac87ef16",
+  "model_type": "HistGradientBoostingClassifier"
+}

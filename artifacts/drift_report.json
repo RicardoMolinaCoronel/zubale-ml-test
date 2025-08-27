@@ -1,0 +1,32 @@
+{
+  "threshold": 0.2,
+  "overall_drift": true,
+  "features": {
+    "add_on_count": 0.0057,
+    "tenure_months": 0.0197,
+    "monthly_usage_gb": 0.0108,
+    "avg_latency_ms": 0.3224,
+    "support_tickets_30d": 0.1225,
+    "discount_pct": 0.1208,
+    "payment_failures_90d": 0.0005,
+    "downtime_hours_30d": 0.3019,
+    "plan_type": 0.0015,
+    "contract_type": 0.0116,
+    "autopay": 0.1103,
+    "is_promo_user": 0.0004
+  },
+  "ks": {
+    "add_on_count": 0.035,
+    "tenure_months": 0.0537,
+    "monthly_usage_gb": 0.0413,
+    "avg_latency_ms": 0.2175,
+    "support_tickets_30d": 0.1638,
+    "discount_pct": 0.1313,
+    "payment_failures_90d": 0.0088,
+    "downtime_hours_30d": 0.2062,
+    "plan_type": null,
+    "contract_type": null,
+    "autopay": null,
+    "is_promo_user": null
+  }
+}
