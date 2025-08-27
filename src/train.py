@@ -9,13 +9,15 @@ import numpy as np
 from joblib import dump
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
+
 
 from .features import build_preprocessor, TARGET, SEED, \
     CATEGORICAL_COLS, NUMERIC_COLS
 from .models import build_model
 from .metrics import compute_metrics, save_json, get_git_sha
 
-def main(pd=pd):
+def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
     ap.add_argument("--outdir", required=True)
@@ -37,7 +39,11 @@ def main(pd=pd):
     X_valp = pre.transform(X_val)
 
     model = build_model(args.model)
-    model.fit(X_trp, y_tr)
+    # Always do randomized HPO (deterministic)
+    HPO_TRIALS = 15
+    model = randomized_hpo(model, X_trp, y_tr, HPO_TRIALS, seed=SEED)
+
+    #model.fit(X_trp, y_tr)
 
     if hasattr(model, "predict_proba"):
         p_val = model.predict_proba(X_valp)[:, 1]
@@ -60,7 +66,6 @@ def main(pd=pd):
 
     # optional feature importances
     try:
-        import pandas as pd
         if hasattr(model, "feature_importances_"):
             # build names
             from .features import get_feature_names
@@ -73,7 +78,118 @@ def main(pd=pd):
     except Exception:
         pass
 
+
+    from .features import get_feature_names
+
+    fnames = get_feature_names(pre)
+    importances = None
+
+    # 1) XGBoost native "gain" (most informative)
+    try:
+        from xgboost import XGBClassifier  # type: ignore
+        if isinstance(model, XGBClassifier):
+            booster = model.get_booster()
+            scores = booster.get_score(importance_type="gain")  # {'f0': gain, 'f1': ...}
+            imp = np.zeros(len(fnames), dtype=float)
+            for k, v in scores.items():
+                try:
+                    idx = int(k[1:])  # 'f123' -> 123
+                    if 0 <= idx < len(imp):
+                        imp[idx] = float(v)
+                except Exception:
+                    continue
+            if imp.sum() > 0:
+                importances = imp
+    except Exception as e:
+        # keep going to other fallbacks
+        pass
+
+    # 2) sklearn-style feature_importances_
+    if importances is None and hasattr(model, "feature_importances_"):
+        try:
+            fi = np.asarray(model.feature_importances_)
+            if fi.size > 0:
+                importances = fi
+        except Exception:
+            pass
+
+    # 3) Permutation importance (model-agnostic)
+    if importances is None:
+        try:
+            from sklearn.inspection import permutation_importance
+            r = permutation_importance(
+                model, X_valp, y_val,
+                scoring="roc_auc", n_repeats=5, random_state=SEED
+            )
+            importances = r.importances_mean
+        except Exception:
+            importances = None
+
+    # 4) Write CSV if we got something
+    if importances is not None and len(importances):
+        pd.DataFrame(
+            {"feature": fnames[:len(importances)], "importance": importances}
+        ).sort_values("importance", ascending=False).to_csv(
+            os.path.join(args.outdir, "feature_importances.csv"), index=False
+        )
+    else:
+        # Optional: emit a hint so you’re aware during dev/CI
+        print("[warn] feature_importances could not be computed; skipping CSV export")
+
     print(json.dumps(m, indent=2))
+
+def randomized_hpo(model, X, y, trials: int, seed: int = 42):
+    """
+    Run 10–20 trial randomized HPO.
+    Supports XGBClassifier and HistGradientBoostingClassifier.
+    Falls back to fitting the provided model if search fails.
+    """
+    try:
+        from xgboost import XGBClassifier  # optional
+        is_xgb = isinstance(model, XGBClassifier)
+    except Exception:
+        is_xgb = False
+
+    if is_xgb:
+        param_dist = {
+            "n_estimators": [200, 300, 400, 600],
+            "max_depth": [3, 4, 5, 6],
+            "learning_rate": [0.03, 0.05, 0.08, 0.1],
+            "subsample": [0.7, 0.8, 0.9, 1.0],
+            "colsample_bytree": [0.6, 0.8, 1.0],
+            "reg_lambda": [0.0, 0.5, 1.0, 2.0],
+        }
+        scoring = "roc_auc"
+    else:
+        # HistGradientBoostingClassifier (fallback)
+        from sklearn.ensemble import HistGradientBoostingClassifier
+        if isinstance(model, HistGradientBoostingClassifier):
+            param_dist = {
+                "max_leaf_nodes": [15, 31, 63],
+                "learning_rate": [0.03, 0.05, 0.08, 0.1],
+                "l2_regularization": [0.0, 0.5, 1.0],
+            }
+        else:
+            # e.g., LogisticRegression — not worth random search; just fit.
+            model.fit(X, y)
+            return model
+        scoring = "roc_auc"
+
+    cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=seed)
+    search = RandomizedSearchCV(
+        model,
+        param_distributions=param_dist,
+        n_iter=trials,
+        scoring=scoring,
+        cv=cv,
+        random_state=seed,
+        n_jobs=1,
+        verbose=0,
+        refit=True,
+    )
+    search.fit(X, y)
+    return search.best_estimator_
+
 
 if __name__ == "__main__":
     main()
