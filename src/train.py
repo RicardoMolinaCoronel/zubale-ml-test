@@ -1,7 +1,6 @@
 # TODO: Implement training script.
 # CLI: python -m src.train --data data/customer_churn_synth.csv --outdir artifacts/
 
-
 import argparse, os, json
 from datetime import datetime, timezone
 import pandas as pd
@@ -39,6 +38,7 @@ def main():
     X_valp = pre.transform(X_val)
 
     model = build_model(args.model)
+
     # Always do randomized HPO (deterministic)
     HPO_TRIALS = 15
     model = randomized_hpo(model, X_trp, y_tr, HPO_TRIALS, seed=SEED)
@@ -64,7 +64,7 @@ def main():
     dump(pre, os.path.join(args.outdir, "feature_pipeline.pkl"))
     dump(model, os.path.join(args.outdir, "model.pkl"))
 
-    # optional feature importances
+    # Features importance
     try:
         if hasattr(model, "feature_importances_"):
             # build names
@@ -78,70 +78,11 @@ def main():
     except Exception:
         pass
 
-
-    from .features import get_feature_names
-
-    fnames = get_feature_names(pre)
-    importances = None
-
-    # 1) XGBoost native "gain" (most informative)
-    try:
-        from xgboost import XGBClassifier  # type: ignore
-        if isinstance(model, XGBClassifier):
-            booster = model.get_booster()
-            scores = booster.get_score(importance_type="gain")  # {'f0': gain, 'f1': ...}
-            imp = np.zeros(len(fnames), dtype=float)
-            for k, v in scores.items():
-                try:
-                    idx = int(k[1:])  # 'f123' -> 123
-                    if 0 <= idx < len(imp):
-                        imp[idx] = float(v)
-                except Exception:
-                    continue
-            if imp.sum() > 0:
-                importances = imp
-    except Exception as e:
-        # keep going to other fallbacks
-        pass
-
-    # 2) sklearn-style feature_importances_
-    if importances is None and hasattr(model, "feature_importances_"):
-        try:
-            fi = np.asarray(model.feature_importances_)
-            if fi.size > 0:
-                importances = fi
-        except Exception:
-            pass
-
-    # 3) Permutation importance (model-agnostic)
-    if importances is None:
-        try:
-            from sklearn.inspection import permutation_importance
-            r = permutation_importance(
-                model, X_valp, y_val,
-                scoring="roc_auc", n_repeats=5, random_state=SEED
-            )
-            importances = r.importances_mean
-        except Exception:
-            importances = None
-
-    # 4) Write CSV if we got something
-    if importances is not None and len(importances):
-        pd.DataFrame(
-            {"feature": fnames[:len(importances)], "importance": importances}
-        ).sort_values("importance", ascending=False).to_csv(
-            os.path.join(args.outdir, "feature_importances.csv"), index=False
-        )
-    else:
-        # Optional: emit a hint so you’re aware during dev/CI
-        print("[warn] feature_importances could not be computed; skipping CSV export")
-
     print(json.dumps(m, indent=2))
 
 def randomized_hpo(model, X, y, trials: int, seed: int = 42):
     """
-    Run 10–20 trial randomized HPO.
-    Supports XGBClassifier and HistGradientBoostingClassifier.
+    Run trial randomized HPO.
     Falls back to fitting the provided model if search fails.
     """
     try:
@@ -161,7 +102,6 @@ def randomized_hpo(model, X, y, trials: int, seed: int = 42):
         }
         scoring = "roc_auc"
     else:
-        # HistGradientBoostingClassifier (fallback)
         from sklearn.ensemble import HistGradientBoostingClassifier
         if isinstance(model, HistGradientBoostingClassifier):
             param_dist = {
@@ -170,7 +110,6 @@ def randomized_hpo(model, X, y, trials: int, seed: int = 42):
                 "l2_regularization": [0.0, 0.5, 1.0],
             }
         else:
-            # e.g., LogisticRegression — not worth random search; just fit.
             model.fit(X, y)
             return model
         scoring = "roc_auc"

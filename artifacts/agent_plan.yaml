@@ -1,3 +1,4 @@
+status: warn
 findings:
 - roc_auc_drop_pct: 0.0
 - latency_p95_ms: 474.0
@@ -6,6 +7,6 @@ actions:
 - trigger_retraining
 - raise_thresholds
 - page_oncall=false
-status: warn
-rationale: 'Rules: AUC drop vs 7-day median; p95 latency > 400ms x2; drift flag +
-  PR-AUC drop.'
+rationale: 'Heuristics: warn if AUC drop ≥3% vs 7-day median or p95 latency >400ms
+  for two points; critical if AUC drop ≥6% or (overall_drift true AND PR-AUC drop
+  ≥5%).'

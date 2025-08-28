@@ -1,8 +1,10 @@
 # TODO: Implement FastAPI app for churn inference.
 # Endpoints: GET /health, POST /predict
 
-# src/app.py
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi import status
 from joblib import load
 import pandas as pd
 import os
@@ -43,3 +45,13 @@ def predict(req: PredictRequest):
         prob = MinMaxScaler().fit_transform(s).ravel()
     cls = (prob >= 0.5).astype(int).tolist()
     return {"prob": [float(p) for p in prob], "cls": cls}
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "detail": "Invalid request payload",
+            "errors": exc.errors(),
+        },
+    )
