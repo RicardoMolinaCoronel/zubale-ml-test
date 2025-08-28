@@ -68,22 +68,4 @@ def get_feature_names(pre: ColumnTransformer) -> List[str]:
         names.extend(feats)
     return names
 
-'''
-def get_feature_names(pre: ColumnTransformer) -> List[str]:
-    # Fit on a single dummy row to get names safely
-    data = {c: [None] for c in (CATEGORICAL_COLS + NUMERIC_COLS)}
-    _ = pre.fit(pd.DataFrame(data))
-    names: List[str] = []
-    for name, trans, cols in pre.transformers_:
-        if name == "remainder":
-            continue
-        if hasattr(trans, "get_feature_names_out"):
-            try:
-                feats = list(trans.get_feature_names_out(cols))
-            except TypeError:
-                feats = list(trans.get_feature_names_out())
-        else:
-            feats = list(cols)
-        names.extend(feats)
-    return names
-'''
+

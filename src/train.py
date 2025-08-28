@@ -83,7 +83,6 @@ def main():
 def randomized_hpo(model, X, y, trials: int, seed: int = 42):
     """
     Run trial randomized HPO.
-    Falls back to fitting the provided model if search fails.
     """
     try:
         from xgboost import XGBClassifier  # optional

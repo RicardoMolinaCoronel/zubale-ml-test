@@ -1,7 +1,6 @@
 # TODO: Implement PSI/KS drift calc.
 # CLI: python -m src.drift --ref data/churn_ref_sample.csv --new data/churn_shifted_sample.csv
 
-# src/drift.py
 import argparse, json, os
 import numpy as np
 import pandas as pd

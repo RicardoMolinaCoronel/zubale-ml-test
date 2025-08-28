@@ -1,7 +1,5 @@
 # TODO: Boot API, call /predict using tests/sample.json
 
-# tests/test_inference.py
-# Boot API, call /predict using sample.json
 
 import os
 import sys
@@ -13,7 +11,6 @@ from fastapi.testclient import TestClient
 DATA_PATH = "data/customer_churn_synth.csv"
 ART_DIR = "artifacts"
 
-# Hard-coded sample request (as provided)
 SAMPLE_ROWS = [
     {
         "plan_type": "Standard",
