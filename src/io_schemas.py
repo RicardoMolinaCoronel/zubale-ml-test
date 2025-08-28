@@ -1,6 +1,5 @@
 # TODO: Pydantic schemas for /predict
 
-# src/io_schemas.py
 from typing import List, Literal
 from pydantic import BaseModel, field_validator
 

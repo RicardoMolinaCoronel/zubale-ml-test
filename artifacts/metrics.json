@@ -2,7 +2,7 @@
   "roc_auc": 0.9337265910877137,
   "pr_auc": 0.8730750584366633,
   "accuracy": 0.8683333333333333,
-  "timestamp": "2025-08-28T01:38:09.641886+00:00",
-  "git_sha": "25ca7df37facb964a4bd8076f6e153771eb933e4",
+  "timestamp": "2025-08-28T05:26:36.193482+00:00",
+  "git_sha": "60785da3c871f651db08bea4890df856390ecc46",
   "model_type": "XGBClassifier"
 }

@@ -1,6 +1,5 @@
 # TODO: Train/save/load utilities
 
-# src/models.py
 from typing import Any
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier

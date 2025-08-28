@@ -1,6 +1,5 @@
 # TODO: Compute ROC-AUC, PR-AUC, accuracy
 
-# src/metrics.py
 import json, os, subprocess
 from typing import Dict, Optional
 from sklearn.metrics import roc_auc_score, average_precision_score, accuracy_score

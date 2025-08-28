@@ -1,6 +1,5 @@
 # TODO: Train, assert artifacts exist and ROC-AUC threshold
-# tests/test_training.py
-# Train, assert artifacts exist and ROC-AUC threshold
+
 
 import json
 import os
@@ -13,7 +12,6 @@ ART_DIR = "artifacts"
 
 @pytest.mark.order(1)
 def test_training_produces_artifacts_and_quality():
-    # Skip in CI/local if dataset is missing
     if not os.path.exists(DATA_PATH):
         pytest.skip(f"Dataset not found at {DATA_PATH}")
 
@@ -31,7 +29,7 @@ def test_training_produces_artifacts_and_quality():
     assert os.path.exists(model_path), "model.pkl not found"
     assert os.path.exists(preproc_path), "feature_pipeline.pkl not found"
 
-    # Quality gate
+    # Quality ensuring
     with open(metrics_path, "r", encoding="utf-8") as f:
         metrics = json.load(f)
     assert "roc_auc" in metrics, "roc_auc missing in metrics.json"

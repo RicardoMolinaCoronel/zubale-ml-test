@@ -1,4 +1,4 @@
-# 🧠 Mini-Prod ML Challenge — Churn Prediction
+# Mini-Prod ML Challenge — Churn Prediction
 
 This repository implements a **production-ready ML pipeline** for customer churn prediction.  
 It covers **training, serving, monitoring, and lightweight MLOps practices** using Python, FastAPI, Docker, and GitHub Actions.
